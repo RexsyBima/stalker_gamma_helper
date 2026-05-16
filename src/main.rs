@@ -3,7 +3,39 @@ use std::io;
 
 use serde::Deserialize;
 
+use encoding_rs::WINDOWS_1252;
 use serde::de::DeserializeOwned;
+use std::collections::HashMap;
+use std::fs;
+
+fn read_kv_csv(path: &str) -> Result<HashMap<String, String>, Box<dyn Error>> {
+    let mut rdr = csv::ReaderBuilder::new()
+        .has_headers(false)
+        .flexible(true)
+        .from_path(path)?;
+
+    let mut map = HashMap::new();
+
+    for result in rdr.byte_records() {
+        let record = result?;
+
+        let key = record
+            .get(0)
+            .map(|b| WINDOWS_1252.decode(b).0.into_owned())
+            .unwrap_or_default();
+
+        let value = record
+            .get(1)
+            .map(|b| WINDOWS_1252.decode(b).0.into_owned())
+            .unwrap_or_default();
+
+        if !key.is_empty() {
+            map.insert(key, value);
+        }
+    }
+
+    Ok(map)
+}
 
 #[derive(Deserialize, Debug)]
 struct Ammo {
@@ -98,15 +130,21 @@ fn read_csv<T: DeserializeOwned>(path: &str) -> Result<Vec<T>, Box<dyn Error>> {
 
 fn main() {
     // todo!("get the field header of the csv file");
-    let csv_file_paths = ["data/export_ammo.csv", "location2"];
+    let csv_file_paths = [
+        "data/gamma-0.9.5/export_ammo.csv",
+        "data/gamma-0.9.5/en_us.csv",
+    ];
     let app_version: u8 = 1;
     let gamma_tip = "Use bandage to stop the bleeding";
     let gamma_tips = vec!["tip 1", "tip 2", "tip 3"];
     let random_number = rand::random_range(0..gamma_tips.len());
     let mut user_input = String::new();
-    let ammos: Vec<Ammo> = read_csv("data/export_ammo.csv").expect("failed to read csv file");
+    let ammos: Vec<Ammo> = read_csv(csv_file_paths[0]).expect("failed to read csv file");
+    let db = read_kv_csv(csv_file_paths[1]);
     dbg!(ammos);
+    dbg!(&db);
 
+    dbg!(db.expect("").get("st_up_zatp_c3_descr"));
     println!("current app version is {}!", app_version);
     println!("you want to get current gamma tip?");
 
