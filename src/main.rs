@@ -37,6 +37,49 @@ fn read_kv_csv(path: &str) -> Result<HashMap<String, String>, Box<dyn Error>> {
     Ok(map)
 }
 
+fn read_csv<T: DeserializeOwned>(path: &str) -> Result<Vec<T>, Box<dyn Error>> {
+    let mut rdr = csv::Reader::from_path(path)?;
+    let items: Result<Vec<T>, _> = rdr.deserialize().collect();
+    let items = items?;
+    Ok(items)
+}
+
+fn main() {
+    // todo!("get the field header of the csv file");
+    let csv_file_paths = [
+        "data/gamma-0.9.5/export_ammo.csv",
+        "data/gamma-0.9.5/en_us.csv",
+    ];
+    let app_version: u8 = 1;
+    let gamma_tip = "Use bandage to stop the bleeding";
+    let gamma_tips = vec!["tip 1", "tip 2", "tip 3"];
+    let random_number = rand::random_range(0..gamma_tips.len());
+    let mut user_input = String::new();
+    let ammos: Vec<Ammo> = read_csv(csv_file_paths[0]).expect("failed to read csv file");
+    let db = read_kv_csv(csv_file_paths[1]);
+    dbg!(ammos);
+    dbg!(&db);
+
+    dbg!(db.as_ref().expect("").get("st_up_zatp_c3_descr"));
+    dbg!(db.expect("").get("st_up_zatp_c3_descr"));
+    println!("current app version is {}!", app_version);
+    println!("you want to get current gamma tip?");
+
+    io::stdin()
+        .read_line(&mut user_input)
+        .expect("please input your value");
+
+    println!("input from 1 to {} to get random tip", gamma_tips.len());
+
+    match user_input.trim() {
+        "yes" | "y" => println!("Gamma tip: {}", gamma_tip),
+        "no" | "n" => println!("Okay, maybe next time!"),
+        _ => println!("Invalid input. Please enter 'yes' or 'no'."),
+    }
+
+    println!("{}", gamma_tips[random_number])
+}
+
 #[derive(Deserialize, Debug)]
 struct Ammo {
     #[serde(rename = "~")]
@@ -119,46 +162,4 @@ struct Weapon {
 
     #[serde(rename = "placeholder")] // CSV column name
     description: String,
-}
-
-fn read_csv<T: DeserializeOwned>(path: &str) -> Result<Vec<T>, Box<dyn Error>> {
-    let mut rdr = csv::Reader::from_path(path)?;
-    let items: Result<Vec<T>, _> = rdr.deserialize().collect();
-    let items = items?;
-    Ok(items)
-}
-
-fn main() {
-    // todo!("get the field header of the csv file");
-    let csv_file_paths = [
-        "data/gamma-0.9.5/export_ammo.csv",
-        "data/gamma-0.9.5/en_us.csv",
-    ];
-    let app_version: u8 = 1;
-    let gamma_tip = "Use bandage to stop the bleeding";
-    let gamma_tips = vec!["tip 1", "tip 2", "tip 3"];
-    let random_number = rand::random_range(0..gamma_tips.len());
-    let mut user_input = String::new();
-    let ammos: Vec<Ammo> = read_csv(csv_file_paths[0]).expect("failed to read csv file");
-    let db = read_kv_csv(csv_file_paths[1]);
-    dbg!(ammos);
-    dbg!(&db);
-
-    dbg!(db.expect("").get("st_up_zatp_c3_descr"));
-    println!("current app version is {}!", app_version);
-    println!("you want to get current gamma tip?");
-
-    io::stdin()
-        .read_line(&mut user_input)
-        .expect("please input your value");
-
-    println!("input from 1 to {} to get random tip", gamma_tips.len());
-
-    match user_input.trim() {
-        "yes" | "y" => println!("Gamma tip: {}", gamma_tip),
-        "no" | "n" => println!("Okay, maybe next time!"),
-        _ => println!("Invalid input. Please enter 'yes' or 'no'."),
-    }
-
-    println!("{}", gamma_tips[random_number])
 }
